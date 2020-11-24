@@ -1,7 +1,7 @@
 using System;
 using Xunit;
 
-namespace dns_tls_proxy.tests
+namespace DnsTlsProxy.Tests
 {
     public class UnitTest1
     {

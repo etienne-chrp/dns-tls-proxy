@@ -5,11 +5,11 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4E49A904-5BDE-4F4D-B6C6-A8CF41B6D6D6}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dns-tls-proxy", "src\dns-tls-proxy\dns-tls-proxy.csproj", "{0EAC555C-EDF0-4F26-89B3-E1B17280190B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DnsTlsProxy", "src\DnsTlsProxy\DnsTlsProxy.csproj", "{0EAC555C-EDF0-4F26-89B3-E1B17280190B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C8D9073E-111F-4458-96CA-AEB776DE43B5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dns-tls-proxy.tests", "tests\dns-tls-proxy.tests\dns-tls-proxy.tests.csproj", "{68E2BA6F-33A4-4EE6-9FC1-E75D2313AD85}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DnsTlsProxy.Tests", "tests\DnsTlsProxy.Tests\DnsTlsProxy.Tests.csproj", "{68E2BA6F-33A4-4EE6-9FC1-E75D2313AD85}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

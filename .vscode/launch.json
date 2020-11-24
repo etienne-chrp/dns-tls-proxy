@@ -9,9 +9,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/src/dns-tls-proxy/bin/Debug/netcoreapp3.1/dns-tls-proxy.dll",
+            "program": "${workspaceFolder}/src/DnsTlsProxy/bin/Debug/netcoreapp3.1/DnsTlsProxy.dll",
             "args": [],
-            "cwd": "${workspaceFolder}/src/dns-tls-proxy",
+            "cwd": "${workspaceFolder}/src/DnsTlsProxy",
             "console": "internalConsole",
             "stopAtEntry": false
         },

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace dns_tls_proxy
+namespace DnsTlsProxy
 {
     class Program
     {

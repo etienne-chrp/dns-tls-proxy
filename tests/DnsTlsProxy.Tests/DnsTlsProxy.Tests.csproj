@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <RootNamespace>dns_tls_proxy.tests</RootNamespace>
+    <RootNamespace>DnsTlsProxy.Tests</RootNamespace>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\dns-tls-proxy\dns-tls-proxy.csproj" />
+    <ProjectReference Include="..\..\src\DnsTlsProxy\DnsTlsProxy.csproj" />
   </ItemGroup>
 
 </Project>
