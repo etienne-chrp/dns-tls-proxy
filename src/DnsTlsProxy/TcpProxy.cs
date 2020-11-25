@@ -1,6 +1,9 @@
 using System;
+using System.IO;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -63,12 +66,19 @@ namespace DnsTlsProxy
                     using (_server)
                     {
                         await _server.ConnectAsync(_serverEndpoint.Address, _serverEndpoint.Port);
-                        Console.WriteLine($"Established {_clientEndpoint} => {_serverEndpoint}");
 
-                        var serverStream = _server.GetStream();
-                        var clientStream = _client.GetStream();
+                        using (SslStream serverStream = new SslStream(
+                            _server.GetStream(),
+                            false,
+                            new RemoteCertificateValidationCallback(ValidateServerCertificate)))
+                        {
+                            await serverStream.AuthenticateAsClientAsync(_serverEndpoint.Address.ToString());
+                            Console.WriteLine($"Established {_clientEndpoint} => {_serverEndpoint}");
 
-                        await Task.WhenAny(clientStream.CopyToAsync(serverStream), serverStream.CopyToAsync(clientStream));
+                            var clientStream = _client.GetStream();
+
+                            await Task.WhenAny(clientStream.CopyToAsync(serverStream), serverStream.CopyToAsync(clientStream));
+                        }
                     }
                 }
                 catch (Exception e)
@@ -78,6 +88,22 @@ namespace DnsTlsProxy
 
                 Console.WriteLine($"Closed {_clientEndpoint} => {_serverEndpoint}");
             });
+        }
+
+        // The following method is invoked by the RemoteCertificateValidationDelegate.
+        public static bool ValidateServerCertificate(
+            object sender,
+            X509Certificate certificate,
+            X509Chain chain,
+            SslPolicyErrors sslPolicyErrors)
+        {
+            if (sslPolicyErrors == SslPolicyErrors.None)
+                return true;
+
+            Console.WriteLine("Certificate error: {0}", sslPolicyErrors);
+
+            // Do not allow this client to communicate with unauthenticated servers.
+            return false;
         }
     }
 }

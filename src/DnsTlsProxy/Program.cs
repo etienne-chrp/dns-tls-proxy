@@ -11,7 +11,7 @@ namespace DnsTlsProxy
                 var proxy = new TcpProxy();
                 proxy.Start(
                     new IPEndPoint(IPAddress.Any, 5053),
-                    new IPEndPoint(IPAddress.Parse("1.1.1.1"), 53)
+                    new IPEndPoint(IPAddress.Parse("1.1.1.1"), 853)
                 ).Wait();
             }
             catch (Exception e) {
