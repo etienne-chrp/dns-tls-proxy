@@ -10,6 +10,9 @@ N26 Challenge to create a DNS TLS proxy
 - Explain how to build/debug in vscode container
 - Check DNS mesh container
 - Check K8S DNS override
+- Review commits and create clean history
+- Refacto DNS/TCP 2 bytes in UdpProxy
+- Make generic DnsTlsClient class that would accept the request data and return the response
 
 ## Run
 
