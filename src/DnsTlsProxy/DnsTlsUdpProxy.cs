@@ -2,24 +2,34 @@ using System;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace DnsTlsProxy
 {
-    public class DnsTlsUdpProxy
+    public class DnsTlsUdpProxy : BackgroundService
     {
-        public async Task Start(IPEndPoint localEndpoint, IPEndPoint remoteEndpoint)
-        {
-            var server = new UdpClient(localEndpoint);
+        private IOptions<AppConfig> _appConfig;
 
-            Console.WriteLine($"UDP proxy started {localEndpoint} -> {remoteEndpoint}");
+        public DnsTlsUdpProxy(IOptions<AppConfig> appConfig)
+        {
+            _appConfig = appConfig;
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            var server = new UdpClient(_appConfig.Value.LocalEndpoint);
+
+            Console.WriteLine($"UDP proxy started {_appConfig.Value.LocalEndpoint} -> {_appConfig.Value.DnsEndpoint}");
             while (true)
             {
                 try
                 {
                     var udpReceiveResult = await server.ReceiveAsync();
 
-                    Run(udpReceiveResult, server, remoteEndpoint);
+                    Run(udpReceiveResult, server, _appConfig.Value.DnsEndpoint);
                 }
                 catch (Exception ex)
                 {
