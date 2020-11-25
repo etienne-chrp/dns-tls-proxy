@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace DnsTlsProxy
 {
-    public class TcpProxy
+    public class DnsTlsTcpProxy
     {
         public async Task Start(IPEndPoint localServer, IPEndPoint remoteServer)
         {
