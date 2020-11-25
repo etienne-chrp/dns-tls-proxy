@@ -6,15 +6,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace DnsTlsProxy
 {
     public class DnsTlsUdpProxy : BackgroundService
     {
+        private readonly ILogger _logger;
         private IOptions<AppConfig> _appConfig;
 
-        public DnsTlsUdpProxy(IOptions<AppConfig> appConfig)
+        public DnsTlsUdpProxy(ILogger<DnsTlsUdpProxy> logger, IOptions<AppConfig> appConfig)
         {
+            _logger = logger;
             _appConfig = appConfig;
         }
 
@@ -22,18 +25,17 @@ namespace DnsTlsProxy
         {
             var server = new UdpClient(_appConfig.Value.LocalEndpoint);
 
-            Console.WriteLine($"UDP proxy started {_appConfig.Value.LocalEndpoint} -> {_appConfig.Value.DnsEndpoint}");
+            _logger.LogInformation($"UDP proxy started {_appConfig.Value.LocalEndpoint} -> {_appConfig.Value.DnsEndpoint}");
             while (true)
             {
                 try
                 {
                     var udpReceiveResult = await server.ReceiveAsync();
-
                     Run(udpReceiveResult, server, _appConfig.Value.DnsEndpoint);
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    Console.WriteLine(ex);
+                    _logger.LogError(e, "UDP proxy server failed");
                 }
             }
         }
@@ -50,10 +52,10 @@ namespace DnsTlsProxy
                     using (SslStream serverStream = new SslStream(
                         server.GetStream(),
                         false,
-                        new RemoteCertificateValidationCallback(SslStreamHelper.ValidateServerCertificate)))
+                        new RemoteCertificateValidationCallback(new SslStreamHelper(_logger).ValidateServerCertificate)))
                     {
                         await serverStream.AuthenticateAsClientAsync(remoteEndpoint.Address.ToString());
-                        Console.WriteLine($"Established {_udpReceiveResult.RemoteEndPoint} => {remoteEndpoint}");
+                        _logger.LogDebug($"Established {_udpReceiveResult.RemoteEndPoint} => {remoteEndpoint}");
 
                         var data = _udpReceiveResult.Buffer;
                         byte[] length = BitConverter.GetBytes((ushort)data.Length);
@@ -83,10 +85,10 @@ namespace DnsTlsProxy
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                _logger.LogError(e, "DNS question proxy failed");
             }
 
-            Console.WriteLine($"Closed {_udpReceiveResult.RemoteEndPoint} => {remoteEndpoint}");
+            _logger.LogDebug($"Closed {_udpReceiveResult.RemoteEndPoint} => {remoteEndpoint}");
         }
     }
 }
