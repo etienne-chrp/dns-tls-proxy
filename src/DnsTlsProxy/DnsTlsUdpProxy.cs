@@ -31,7 +31,7 @@ namespace DnsTlsProxy
                 try
                 {
                     var udpReceiveResult = await server.ReceiveAsync();
-                    Run(udpReceiveResult, server, _appConfig.Value.DnsEndpoint);
+                    Run(udpReceiveResult, server, _appConfig.Value.DnsEndpoint, stoppingToken);
                 }
                 catch (Exception e)
                 {
@@ -40,7 +40,7 @@ namespace DnsTlsProxy
             }
         }
 
-        private async void Run(UdpReceiveResult _udpReceiveResult, UdpClient client, IPEndPoint remoteEndpoint)
+        private async void Run(UdpReceiveResult _udpReceiveResult, UdpClient client, IPEndPoint remoteEndpoint, CancellationToken stoppingToken)
         {
             try
             {
@@ -65,11 +65,11 @@ namespace DnsTlsProxy
                             Array.Reverse(length);
                         }
 
-                        await serverStream.WriteAsync(length, 0, length.Length);
-                        await serverStream.WriteAsync(data, 0, data.Length);
+                        await serverStream.WriteAsync(length, 0, length.Length, stoppingToken);
+                        await serverStream.WriteAsync(data, 0, data.Length, stoppingToken);
 
                         length = new byte[2];
-                        await serverStream.ReadAsync(length, 0, length.Length);
+                        await serverStream.ReadAsync(length, 0, length.Length, stoppingToken);
 
                         if (BitConverter.IsLittleEndian)
                         {
@@ -77,7 +77,7 @@ namespace DnsTlsProxy
                         }
 
                         var buffer = new byte[BitConverter.ToUInt16(length)];
-                        await serverStream.ReadAsync(buffer, 0, buffer.Length);
+                        await serverStream.ReadAsync(buffer, 0, buffer.Length, stoppingToken);
 
                         await client.SendAsync(buffer, buffer.Length, _udpReceiveResult.RemoteEndPoint);
                     }
