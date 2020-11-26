@@ -36,7 +36,7 @@ namespace DnsTlsProxy
             await stream.WriteAsync(message.Data, 0, message.Data.Length, stoppingToken);
         }
 
-        public async Task<DnsMessage> ResolveTlsAsync(IPEndPoint serverEndpoint, DnsMessage message, CancellationToken stoppingToken)
+        public async Task<DnsMessage> ResolveTlsAsync(IPEndPoint serverEndpoint, string serverCN, DnsMessage message, CancellationToken stoppingToken)
         {
             using (var server = new TcpClient())
             {
@@ -48,7 +48,7 @@ namespace DnsTlsProxy
                     false,
                     new RemoteCertificateValidationCallback(new SslStreamHelper(_logger).ValidateServerCertificate)))
                 {
-                    await serverStream.AuthenticateAsClientAsync(serverEndpoint.Address.ToString());
+                    await serverStream.AuthenticateAsClientAsync(serverCN);
                     _logger.LogDebug($"Established {serverEndpoint}");
 
                     await SendTcpAsync(serverStream, message, stoppingToken);

@@ -51,7 +51,7 @@ namespace DnsTlsProxy
                 var clientStream = client.GetStream();
                 var clientMsg = await dnsClient.ReadTcpAsync(clientStream, stoppingToken);
 
-                var serverMsg = await dnsClient.ResolveTlsAsync(remoteEndpoint, clientMsg, stoppingToken);
+                var serverMsg = await dnsClient.ResolveTlsAsync(remoteEndpoint, _appConfig.Value.DnsCN, clientMsg, stoppingToken);
 
                 await dnsClient.SendTcpAsync(clientStream, serverMsg, stoppingToken);
             }

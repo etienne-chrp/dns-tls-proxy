@@ -47,7 +47,7 @@ namespace DnsTlsProxy
 
                 var clientMsg = new DnsMessage(udpReceiveResult.Buffer);
 
-                var serverMsg = await dnsClient.ResolveTlsAsync(remoteEndpoint, clientMsg, stoppingToken);
+                var serverMsg = await dnsClient.ResolveTlsAsync(remoteEndpoint, _appConfig.Value.DnsCN, clientMsg, stoppingToken);
 
                 await client.SendAsync(serverMsg.Data, serverMsg.Data.Length, udpReceiveResult.RemoteEndPoint);
             }

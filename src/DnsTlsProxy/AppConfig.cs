@@ -17,5 +17,6 @@ namespace DnsTlsProxy
             IPAddress.Parse(DnsIp),
             DnsPort
         );
+        public string DnsCN { get; set; }
     }
 }
