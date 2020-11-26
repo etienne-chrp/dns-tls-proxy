@@ -1,6 +1,5 @@
 using System;
 using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,55 +39,24 @@ namespace DnsTlsProxy
             }
         }
 
-        private async void Run(UdpReceiveResult _udpReceiveResult, UdpClient client, IPEndPoint remoteEndpoint, CancellationToken stoppingToken)
+        private async void Run(UdpReceiveResult udpReceiveResult, UdpClient client, IPEndPoint remoteEndpoint, CancellationToken stoppingToken)
         {
             try
             {
-                using (var server = new TcpClient())
-                {
-                    server.NoDelay = true;
-                    await server.ConnectAsync(remoteEndpoint.Address, remoteEndpoint.Port);
+                var dnsClient = new DnsClient(_logger);
 
-                    using (SslStream serverStream = new SslStream(
-                        server.GetStream(),
-                        false,
-                        new RemoteCertificateValidationCallback(new SslStreamHelper(_logger).ValidateServerCertificate)))
-                    {
-                        await serverStream.AuthenticateAsClientAsync(remoteEndpoint.Address.ToString());
-                        _logger.LogDebug($"Established {_udpReceiveResult.RemoteEndPoint} => {remoteEndpoint}");
+                var clientMsg = new DnsMessage(udpReceiveResult.Buffer);
 
-                        var data = _udpReceiveResult.Buffer;
-                        byte[] length = BitConverter.GetBytes((ushort)data.Length);
+                var serverMsg = await dnsClient.ResolveTlsAsync(remoteEndpoint, clientMsg, stoppingToken);
 
-                        if (BitConverter.IsLittleEndian)
-                        {
-                            Array.Reverse(length);
-                        }
-
-                        await serverStream.WriteAsync(length, 0, length.Length, stoppingToken);
-                        await serverStream.WriteAsync(data, 0, data.Length, stoppingToken);
-
-                        length = new byte[2];
-                        await serverStream.ReadAsync(length, 0, length.Length, stoppingToken);
-
-                        if (BitConverter.IsLittleEndian)
-                        {
-                            Array.Reverse(length);
-                        }
-
-                        var buffer = new byte[BitConverter.ToUInt16(length)];
-                        await serverStream.ReadAsync(buffer, 0, buffer.Length, stoppingToken);
-
-                        await client.SendAsync(buffer, buffer.Length, _udpReceiveResult.RemoteEndPoint);
-                    }
-                }
+                await client.SendAsync(serverMsg.Data, serverMsg.Data.Length, udpReceiveResult.RemoteEndPoint);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, "DNS question proxy failed");
             }
 
-            _logger.LogDebug($"Closed {_udpReceiveResult.RemoteEndPoint} => {remoteEndpoint}");
+            _logger.LogDebug($"Closed {udpReceiveResult.RemoteEndPoint} => {remoteEndpoint}");
         }
     }
 }

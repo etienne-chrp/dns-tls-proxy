@@ -1,6 +1,5 @@
 using System;
 using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,59 +46,14 @@ namespace DnsTlsProxy
         {
             try
             {
-                using (var server = new TcpClient())
-                {
-                    server.NoDelay = true;
-                    await server.ConnectAsync(remoteEndpoint.Address, remoteEndpoint.Port);
+                var dnsClient = new DnsClient(_logger);
 
-                    using (SslStream serverStream = new SslStream(
-                        server.GetStream(),
-                        false,
-                        new RemoteCertificateValidationCallback(new SslStreamHelper(_logger).ValidateServerCertificate)))
-                    {
-                        await serverStream.AuthenticateAsClientAsync(remoteEndpoint.Address.ToString());
-                        _logger.LogDebug($"Established {client.Client.RemoteEndPoint} => {remoteEndpoint}");
+                var clientStream = client.GetStream();
+                var clientMsg = await dnsClient.ReadTcpAsync(clientStream, stoppingToken);
 
-                        var clientStream = client.GetStream();
+                var serverMsg = await dnsClient.ResolveTlsAsync(remoteEndpoint, clientMsg, stoppingToken);
 
-                        var length = new byte[2];
-                        await clientStream.ReadAsync(length, 0, length.Length, stoppingToken);
-
-                        // Different computer architectures store data using different byte orders.
-                        // "Little-endian" means the most significant byte is on the right end of a word.
-                        // https://docs.microsoft.com/en-us/dotnet/api/system.bitconverter.islittleendian
-                        if (BitConverter.IsLittleEndian)
-                            Array.Reverse(length);
-
-                        var buffer = new byte[BitConverter.ToUInt16(length)];
-                        await clientStream.ReadAsync(buffer, 0, buffer.Length, stoppingToken);
-
-                        if (BitConverter.IsLittleEndian)
-                            Array.Reverse(length);
-
-                        await serverStream.WriteAsync(length, 0, length.Length, stoppingToken);
-                        await serverStream.WriteAsync(buffer, 0, buffer.Length, stoppingToken);
-
-                        length = new byte[2];
-                        await serverStream.ReadAsync(length, 0, length.Length, stoppingToken);
-
-                        if (BitConverter.IsLittleEndian)
-                        {
-                            Array.Reverse(length);
-                        }
-
-                        buffer = new byte[BitConverter.ToUInt16(length)];
-                        await serverStream.ReadAsync(buffer, 0, buffer.Length, stoppingToken);
-
-                        if (BitConverter.IsLittleEndian)
-                        {
-                            Array.Reverse(length);
-                        }
-
-                        await clientStream.WriteAsync(length, 0, length.Length, stoppingToken);
-                        await clientStream.WriteAsync(buffer, 0, buffer.Length, stoppingToken);
-                    }
-                }
+                await dnsClient.SendTcpAsync(clientStream, serverMsg, stoppingToken);
             }
             catch (Exception e)
             {
