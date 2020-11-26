@@ -22,6 +22,9 @@
   - [Questions](#questions)
     - [1. Imagine this proxy being deployed in an infrastructure. What would be the security concerns you would raise?](#1-imagine-this-proxy-being-deployed-in-an-infrastructure-what-would-be-the-security-concerns-you-would-raise)
     - [2. How would you integrate that solution in a distributed, microservices-oriented and containerized architecture?](#2-how-would-you-integrate-that-solution-in-a-distributed-microservices-oriented-and-containerized-architecture)
+      - [Sidecar container](#sidecar-container)
+      - [DaemonSet](#daemonset)
+      - [Customize CoreDNS](#customize-coredns)
     - [3. What other improvements do you think would be interesting to add to the project?](#3-what-other-improvements-do-you-think-would-be-interesting-to-add-to-the-project)
   - [References](#references)
 
@@ -34,7 +37,7 @@
 
 ## Description
 
-Most applications are not nativelly supporting DNS over TLS, the goal of this project is to create a proxy that will forward proxy unsecured DNS request to a secured DNS server. 
+Most applications are not nativelly supporting DNS over TLS, the goal of this project is to create a proxy that will forward unsecured DNS request to a secured DNS server. 
 
 ```
 +-----------+ DNS Query +-----------+ DNS Query +-----------+
@@ -70,6 +73,8 @@ docker run -d -p 5053:5053 -p 5053:5053/udp --name dns-tls-proxy dns-tls-proxy
 ```
 #### Custom config
 
+Get DNS server certificate CN `openssl s_client -connect 8.8.8.8:853`
+
 ```bash
 docker run -d \
     -p 6053:6053 \
@@ -78,6 +83,7 @@ docker run -d \
     --env AppConfig__LocalPort="6053" \
     --env AppConfig__DnsIp="8.8.8.8" \
     --env AppConfig__DnsPort="853" \
+    --env AppConfig__DnsCN="dns.google" \
     dns-tls-proxy
 ```
 ### Dotnet
@@ -91,6 +97,7 @@ dotnet run
 - AppConfig__LocalPort="5053"
 - AppConfig__DnsIp="1.1.1.1"
 - AppConfig__DnsPort="853"
+- AppConfig__DnsCN="cloudflare-dns.com"
 
 ## Test
 
@@ -137,16 +144,48 @@ The project is containing the configuration files to be opened in a VS Code remo
 
 ### 1. Imagine this proxy being deployed in an infrastructure. What would be the security concerns you would raise?
 
-a
+- The code could not be considered solid and secure before in depth review and testing
+- Compare to DNS over HTTPS (443/TCP) the traffic can be clearly identified as DNS by the port (853/TCP)
+- The proxy method leaves a surface of unencrypted traffic between the client and itself
 
 ### 2. How would you integrate that solution in a distributed, microservices-oriented and containerized architecture?
 
-a
+#### Sidecar container
+
+In Kuberntes you could run the DNS container in the Pod on the default port 53. You could then specifiy on the app containe rthe default nameserver to be 127.0.0.1.
+
+```yaml
+dnsConfig:
+    nameservers:
+      - 127.0.0.1
+```
+
+<https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-dns-config>
+
+/!\ TO BE TESTED!
+
+#### DaemonSet
+
+In Kubernetes you could run the DNS container on all K8s hosts via a DaemonSet and configure the containers to use the host IP.
+
+```yaml
+dnsConfig:
+    nameservers:
+      - status.hostIP
+```
+
+/!\ TO BE TESTED!
+
+#### Customize CoreDNS
+
+- Could be used to forwarding all traffic to specific IP
+  - Could be used in addition of the DaemonSet
+- Already propose a TLS proxy though... <https://coredns.io/plugins/forward/>
 
 ### 3. What other improvements do you think would be interesting to add to the project?
 
 - Integration tests <https://wright-development.github.io/post/using-docker-for-net-core/>
-- 
+- Accept also TCP/TLS request
 
 ## References
 
