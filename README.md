@@ -91,29 +91,13 @@ nslookup -set=vc -port=5053 n26.com 127.0.0.1
 ```
 ## Implementation
 
-```mermaid
-graph TD;
-    A-->B;
-    A-->C;
-    B-->D;
-    C-->D;
-```
-
-``` 
-              +---------------+           +---------------+           +---------------+
-              | BackGroundSvc | TcpClient |               | TcpStream |               |
-Client TCP--->| TcpProxy      |---------->| ProxyAsync    |---------->| ReadTcpMessage|
-              | Listen Tcp    |     |     |               |           |               |
-              +---------------+     |     +---------------+           +---------------+
-                                    |                                                               
-                      Async call on new connection         
-                                    |                                                               
-              +---------------+     |     +---------------+           +---------------+ 
-              | BackGroundSvc |     |     |               |           |               |                    
-Client UDP--->| UdpProxy      |---------->| ProxyAsync    |---------->| ProxyAsync    |                    
-              | Listen Udp    | UdpClient |               |  |               |                    
-              +---------------+ UdpData   +---------------+ UdpData   +---------------+                    
-```
+1. `DnsTlsUdpProxy` and `DnsTlsTcpProxy` are `BackgroundService` that are listening respectively on UDP and TCP ports
+2. When a request is received an asynchronous call with the request info as arguments is made to the `ProxyAsync` method
+3. The request data is retrieved
+    - TCP: The content of the `TcpClient` stream is read (cf. [DNS TCP message length](###dns-tcp-message-length)
+    - UDP: The `UdpReceiveResult` already contains the data
+4. A TCP/TLS session is initiated with the DNS server, the request is sent and the result read
+5. The result is sent back to the client
 
 ## Technical considerations
 
