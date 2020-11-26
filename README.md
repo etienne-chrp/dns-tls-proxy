@@ -96,7 +96,7 @@ nslookup -set=vc -port=5053 n26.com 127.0.0.1
 3. The request data is retrieved
     - TCP: The content of the `TcpClient` stream is read (cf. [DNS TCP message length](###dns-tcp-message-length)
     - UDP: The `UdpReceiveResult` already contains the data
-4. A TCP/TLS session is initiated with the DNS server, the request is sent and the result read
+4. A TCP/TLS session is initiated with the DNS server, the request is sent and the result read: `DnsClient.ResolveTlsAsync`
 5. The result is sent back to the client
 
 ## Technical considerations
