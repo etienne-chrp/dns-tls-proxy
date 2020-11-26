@@ -7,14 +7,17 @@ namespace DnsTlsProxy
     {
         static void Main(string[] args)
         {
-            try {
-                var proxy = new DnsTlsTcpProxy();
-                proxy.Start(
+            try
+            {
+                var tcpProxyTask = new DnsTlsTcpProxy().Start(
                     new IPEndPoint(IPAddress.Any, 5053),
                     new IPEndPoint(IPAddress.Parse("1.1.1.1"), 853)
-                ).Wait();
+                );
+
+                tcpProxyTask.Wait();
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 Console.WriteLine(e);
             }
         }

@@ -1,31 +1,27 @@
 using System;
-using System.IO;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Cryptography.X509Certificates;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace DnsTlsProxy
 {
     public class DnsTlsTcpProxy
     {
-        public async Task Start(IPEndPoint localServer, IPEndPoint remoteServer)
+        public async Task Start(IPEndPoint localEndpoint, IPEndPoint remoteEndpoint)
         {
-            var server = new System.Net.Sockets.TcpListener(localServer);
+            var server = new TcpListener(localEndpoint);
             server.Start();
 
-            Console.WriteLine($"TCP proxy started {localServer.Port} -> {remoteServer.Address}|{remoteServer.Port}");
+            Console.WriteLine($"TCP proxy started {localEndpoint} -> {remoteEndpoint.Address}|{remoteEndpoint.Port}");
             while (true)
             {
-
                 try
                 {
-                    var remoteClient = await server.AcceptTcpClientAsync();
-                    remoteClient.NoDelay = true;
+                    var client = await server.AcceptTcpClientAsync();
+                    client.NoDelay = true;
 
-                    new TcpClientCustom(remoteClient, remoteServer);
+                    Run(client, remoteEndpoint);
                 }
                 catch (Exception ex)
                 {
@@ -34,60 +30,36 @@ namespace DnsTlsProxy
                 }
             }
         }
-    }
 
-    class TcpClientCustom
-    {
-        private TcpClient _client;
-        private TcpClient _server = new TcpClient();
-        private IPEndPoint _clientEndpoint;
-        private IPEndPoint _serverEndpoint;
-
-
-        public TcpClientCustom(TcpClient localClient, IPEndPoint remoteEndpoint)
+        private async void Run(TcpClient client, IPEndPoint remoteEndpoint)
         {
-            _client = localClient;
-            _serverEndpoint = remoteEndpoint;
-
-            _clientEndpoint = (IPEndPoint)_client.Client.RemoteEndPoint;
-
-            _server.NoDelay = true;
-
-            Run();
-        }
-
-        private void Run()
-        {
-            Task.Run(async () =>
+            try
             {
-                try
+                using (var server = new TcpClient())
                 {
-                    using (_client)
-                    using (_server)
+                    server.NoDelay = true;
+                    await server.ConnectAsync(remoteEndpoint.Address, remoteEndpoint.Port);
+
+                    using (SslStream serverStream = new SslStream(
+                        server.GetStream(),
+                        false,
+                        new RemoteCertificateValidationCallback(SslStreamHelper.ValidateServerCertificate)))
                     {
-                        await _server.ConnectAsync(_serverEndpoint.Address, _serverEndpoint.Port);
+                        await serverStream.AuthenticateAsClientAsync(remoteEndpoint.Address.ToString());
+                        Console.WriteLine($"Established {client.Client.RemoteEndPoint} => {remoteEndpoint}");
 
-                        using (SslStream serverStream = new SslStream(
-                            _server.GetStream(),
-                            false,
-                            new RemoteCertificateValidationCallback(SslStreamHelper.ValidateServerCertificate)))
-                        {
-                            await serverStream.AuthenticateAsClientAsync(_serverEndpoint.Address.ToString());
-                            Console.WriteLine($"Established {_clientEndpoint} => {_serverEndpoint}");
+                        var clientStream = client.GetStream();
 
-                            var clientStream = _client.GetStream();
-
-                            await Task.WhenAny(clientStream.CopyToAsync(serverStream), serverStream.CopyToAsync(clientStream));
-                        }
+                        await Task.WhenAny(clientStream.CopyToAsync(serverStream), serverStream.CopyToAsync(clientStream));
                     }
                 }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
 
-                Console.WriteLine($"Closed {_clientEndpoint} => {_serverEndpoint}");
-            });
+            Console.WriteLine($"Closed {client.Client.RemoteEndPoint} => {remoteEndpoint}");
         }
     }
 }
