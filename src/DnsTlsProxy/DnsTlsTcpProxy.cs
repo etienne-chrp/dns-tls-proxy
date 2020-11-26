@@ -62,7 +62,42 @@ namespace DnsTlsProxy
 
                         var clientStream = client.GetStream();
 
-                        await Task.WhenAny(clientStream.CopyToAsync(serverStream, stoppingToken), serverStream.CopyToAsync(clientStream, stoppingToken));
+                        var length = new byte[2];
+                        await clientStream.ReadAsync(length, 0, length.Length, stoppingToken);
+
+                        // Different computer architectures store data using different byte orders.
+                        // "Little-endian" means the most significant byte is on the right end of a word.
+                        // https://docs.microsoft.com/en-us/dotnet/api/system.bitconverter.islittleendian
+                        if (BitConverter.IsLittleEndian)
+                            Array.Reverse(length);
+
+                        var buffer = new byte[BitConverter.ToUInt16(length)];
+                        await clientStream.ReadAsync(buffer, 0, buffer.Length, stoppingToken);
+
+                        if (BitConverter.IsLittleEndian)
+                            Array.Reverse(length);
+
+                        await serverStream.WriteAsync(length, 0, length.Length, stoppingToken);
+                        await serverStream.WriteAsync(buffer, 0, buffer.Length, stoppingToken);
+
+                        length = new byte[2];
+                        await serverStream.ReadAsync(length, 0, length.Length, stoppingToken);
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            Array.Reverse(length);
+                        }
+
+                        buffer = new byte[BitConverter.ToUInt16(length)];
+                        await serverStream.ReadAsync(buffer, 0, buffer.Length, stoppingToken);
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            Array.Reverse(length);
+                        }
+
+                        await clientStream.WriteAsync(length, 0, length.Length, stoppingToken);
+                        await clientStream.WriteAsync(buffer, 0, buffer.Length, stoppingToken);
                     }
                 }
             }
