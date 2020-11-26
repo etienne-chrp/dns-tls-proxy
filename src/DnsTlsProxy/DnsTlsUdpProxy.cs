@@ -30,7 +30,7 @@ namespace DnsTlsProxy
                 try
                 {
                     var udpReceiveResult = await server.ReceiveAsync();
-                    Run(udpReceiveResult, server, _appConfig.Value.DnsEndpoint, stoppingToken);
+                    ProxyAsync(udpReceiveResult, server, _appConfig.Value.DnsEndpoint, stoppingToken);
                 }
                 catch (Exception e)
                 {
@@ -39,7 +39,7 @@ namespace DnsTlsProxy
             }
         }
 
-        private async void Run(UdpReceiveResult udpReceiveResult, UdpClient client, IPEndPoint remoteEndpoint, CancellationToken stoppingToken)
+        private async void ProxyAsync(UdpReceiveResult udpReceiveResult, UdpClient client, IPEndPoint remoteEndpoint, CancellationToken stoppingToken)
         {
             try
             {

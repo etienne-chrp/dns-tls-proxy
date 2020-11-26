@@ -33,7 +33,7 @@ namespace DnsTlsProxy
                     var client = await server.AcceptTcpClientAsync();
                     client.NoDelay = true;
 
-                    Run(client, _appConfig.Value.DnsEndpoint, stoppingToken);
+                    ProxyAsync(client, _appConfig.Value.DnsEndpoint, stoppingToken);
                 }
                 catch (Exception e)
                 {
@@ -42,7 +42,7 @@ namespace DnsTlsProxy
             }
         }
 
-        private async void Run(TcpClient client, IPEndPoint remoteEndpoint, CancellationToken stoppingToken)
+        private async void ProxyAsync(TcpClient client, IPEndPoint remoteEndpoint, CancellationToken stoppingToken)
         {
             try
             {
