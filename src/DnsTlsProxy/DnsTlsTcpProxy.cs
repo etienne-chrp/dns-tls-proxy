@@ -1,6 +1,5 @@
 using System;
 using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,24 +46,14 @@ namespace DnsTlsProxy
         {
             try
             {
-                using (var server = new TcpClient())
-                {
-                    server.NoDelay = true;
-                    await server.ConnectAsync(remoteEndpoint.Address, remoteEndpoint.Port);
+                var dnsClient = new DnsClient(_logger);
 
-                    using (SslStream serverStream = new SslStream(
-                        server.GetStream(),
-                        false,
-                        new RemoteCertificateValidationCallback(new SslStreamHelper(_logger).ValidateServerCertificate)))
-                    {
-                        await serverStream.AuthenticateAsClientAsync(remoteEndpoint.Address.ToString());
-                        _logger.LogDebug($"Established {client.Client.RemoteEndPoint} => {remoteEndpoint}");
+                var clientStream = client.GetStream();
+                var clientMsg = await dnsClient.ReadTcpAsync(clientStream, stoppingToken);
 
-                        var clientStream = client.GetStream();
+                var serverMsg = await dnsClient.ResolveTlsAsync(remoteEndpoint, clientMsg, stoppingToken);
 
-                        await Task.WhenAny(clientStream.CopyToAsync(serverStream, stoppingToken), serverStream.CopyToAsync(clientStream, stoppingToken));
-                    }
-                }
+                await dnsClient.SendTcpAsync(clientStream, serverMsg, stoppingToken);
             }
             catch (Exception e)
             {
