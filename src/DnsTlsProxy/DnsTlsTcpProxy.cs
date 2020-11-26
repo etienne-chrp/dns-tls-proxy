@@ -2,18 +2,28 @@ using System;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 namespace DnsTlsProxy
 {
-    public class DnsTlsTcpProxy
+    public class DnsTlsTcpProxy : BackgroundService
     {
-        public async Task Start(IPEndPoint localEndpoint, IPEndPoint remoteEndpoint)
+        private IOptions<AppConfig> _appConfig;
+
+        public DnsTlsTcpProxy(IOptions<AppConfig> appConfig)
         {
-            var server = new TcpListener(localEndpoint);
+            _appConfig = appConfig;
+        }
+
+        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            var server = new TcpListener(_appConfig.Value.LocalEndpoint);
             server.Start();
 
-            Console.WriteLine($"TCP proxy started {localEndpoint} -> {remoteEndpoint.Address}|{remoteEndpoint.Port}");
+            Console.WriteLine($"TCP proxy started {_appConfig.Value.LocalEndpoint} -> {_appConfig.Value.DnsEndpoint}");
             while (true)
             {
                 try
@@ -21,7 +31,8 @@ namespace DnsTlsProxy
                     var client = await server.AcceptTcpClientAsync();
                     client.NoDelay = true;
 
-                    Run(client, remoteEndpoint);
+                    Run(client, _appConfig.Value.DnsEndpoint);
+
                 }
                 catch (Exception ex)
                 {

@@ -1,5 +1,8 @@
 ﻿using System;
-using System.Net;
+using System.IO;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace DnsTlsProxy
 {
@@ -7,25 +10,28 @@ namespace DnsTlsProxy
     {
         static void Main(string[] args)
         {
-            try
-            {
-                // TODO add config file
-                var udpProxyTask = new DnsTlsUdpProxy().Start(
-                    new IPEndPoint(IPAddress.Any, 5053),
-                    new IPEndPoint(IPAddress.Parse("1.1.1.1"), 853)
-                );
-                var tcpProxyTask = new DnsTlsTcpProxy().Start(
-                    new IPEndPoint(IPAddress.Any, 5053),
-                    new IPEndPoint(IPAddress.Parse("1.1.1.1"), 853)
-                );
-
-                udpProxyTask.Wait();
-                tcpProxyTask.Wait();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-            }
+            CreateHostBuilder(args).Build().Run();
         }
+
+        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((hostContext, configBuilder) =>
+                {
+                    configBuilder.SetBasePath(Directory.GetCurrentDirectory());
+                    configBuilder.AddJsonFile("appsettings.json", optional: true);
+                    configBuilder.AddJsonFile(
+                        $"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json",
+                        optional: true);
+                    configBuilder.AddEnvironmentVariables();
+                })
+                .ConfigureServices((hostContext, services) =>
+                {
+                    // Here goes your internal application dependencies
+                    // like EntityFramework context, worker, endpoint, etc.
+                    services.AddOptions();
+                    services.Configure<AppConfig>(hostContext.Configuration.GetSection("AppConfig"));
+                    services.AddHostedService<DnsTlsTcpProxy>();
+                    services.AddHostedService<DnsTlsUdpProxy>();
+                });
     }
 }
