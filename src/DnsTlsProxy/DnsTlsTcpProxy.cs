@@ -34,7 +34,7 @@ namespace DnsTlsProxy
                     var client = await server.AcceptTcpClientAsync();
                     client.NoDelay = true;
 
-                    Run(client, _appConfig.Value.DnsEndpoint);
+                    Run(client, _appConfig.Value.DnsEndpoint, stoppingToken);
                 }
                 catch (Exception e)
                 {
@@ -43,7 +43,7 @@ namespace DnsTlsProxy
             }
         }
 
-        private async void Run(TcpClient client, IPEndPoint remoteEndpoint)
+        private async void Run(TcpClient client, IPEndPoint remoteEndpoint, CancellationToken stoppingToken)
         {
             try
             {
@@ -62,7 +62,7 @@ namespace DnsTlsProxy
 
                         var clientStream = client.GetStream();
 
-                        await Task.WhenAny(clientStream.CopyToAsync(serverStream), serverStream.CopyToAsync(clientStream));
+                        await Task.WhenAny(clientStream.CopyToAsync(serverStream, stoppingToken), serverStream.CopyToAsync(clientStream, stoppingToken));
                     }
                 }
             }
