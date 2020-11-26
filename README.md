@@ -4,7 +4,8 @@
 - [Build](#build)
 - [Run](#run)
 - [Test](#test)
-- [Technical consideratons](#technical-consideratons)
+- [Implementation](#implementation)
+- [Technical considerations](#technical-considerations)
 - [VS Code remote container](#vs-code-remote-container)
 - [Questions](#questions)
 - [References](#references)
@@ -88,8 +89,33 @@ dig @127.0.0.1 +tcp -p 5053 n26.com
 nslookup -port=5053 n26.com 127.0.0.1
 nslookup -set=vc -port=5053 n26.com 127.0.0.1 
 ```
+## Implementation
 
-## Technical consideratons
+```mermaid
+graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;
+```
+
+``` 
+              +---------------+           +---------------+           +---------------+
+              | BackGroundSvc | TcpClient |               | TcpStream |               |
+Client TCP--->| TcpProxy      |---------->| ProxyAsync    |---------->| ReadTcpMessage|
+              | Listen Tcp    |     |     |               |           |               |
+              +---------------+     |     +---------------+           +---------------+
+                                    |                                                               
+                      Async call on new connection         
+                                    |                                                               
+              +---------------+     |     +---------------+           +---------------+ 
+              | BackGroundSvc |     |     |               |           |               |                    
+Client UDP--->| UdpProxy      |---------->| ProxyAsync    |---------->| ProxyAsync    |                    
+              | Listen Udp    | UdpClient |               |  |               |                    
+              +---------------+ UdpData   +---------------+ UdpData   +---------------+                    
+```
+
+## Technical considerations
 
 ### DNS TCP message length
 
