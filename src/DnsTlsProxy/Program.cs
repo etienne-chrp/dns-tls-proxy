@@ -3,6 +3,7 @@ using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace DnsTlsProxy
 {
@@ -23,6 +24,16 @@ namespace DnsTlsProxy
                         $"appsettings.{hostContext.HostingEnvironment.EnvironmentName}.json",
                         optional: true);
                     configBuilder.AddEnvironmentVariables();
+                })
+                .ConfigureLogging((hostContext, logging) =>
+                {
+                    logging.ClearProviders();
+                    logging.AddConfiguration(hostContext.Configuration.GetSection("Logging"));
+                    logging.AddSimpleConsole(options =>
+                    {
+                        options.SingleLine = true;
+                        options.TimestampFormat = "[HH:mm:ss]";
+                    });
                 })
                 .ConfigureServices((hostContext, services) =>
                 {

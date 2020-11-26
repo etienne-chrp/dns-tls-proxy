@@ -6,15 +6,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace DnsTlsProxy
 {
     public class DnsTlsTcpProxy : BackgroundService
     {
+        private readonly ILogger _logger;
         private IOptions<AppConfig> _appConfig;
 
-        public DnsTlsTcpProxy(IOptions<AppConfig> appConfig)
+        public DnsTlsTcpProxy(ILogger<DnsTlsTcpProxy> logger, IOptions<AppConfig> appConfig)
         {
+            _logger = logger;
             _appConfig = appConfig;
         }
 
@@ -23,7 +26,7 @@ namespace DnsTlsProxy
             var server = new TcpListener(_appConfig.Value.LocalEndpoint);
             server.Start();
 
-            Console.WriteLine($"TCP proxy started {_appConfig.Value.LocalEndpoint} -> {_appConfig.Value.DnsEndpoint}");
+            _logger.LogInformation($"TCP proxy started {_appConfig.Value.LocalEndpoint} -> {_appConfig.Value.DnsEndpoint}");
             while (true)
             {
                 try
@@ -32,12 +35,10 @@ namespace DnsTlsProxy
                     client.NoDelay = true;
 
                     Run(client, _appConfig.Value.DnsEndpoint);
-
                 }
-                catch (Exception ex)
+                catch (Exception e)
                 {
-                    // TODO add proper logger
-                    Console.WriteLine(ex);
+                    _logger.LogError(e, "TCP proxy server failed");
                 }
             }
         }
@@ -54,10 +55,10 @@ namespace DnsTlsProxy
                     using (SslStream serverStream = new SslStream(
                         server.GetStream(),
                         false,
-                        new RemoteCertificateValidationCallback(SslStreamHelper.ValidateServerCertificate)))
+                        new RemoteCertificateValidationCallback(new SslStreamHelper(_logger).ValidateServerCertificate)))
                     {
                         await serverStream.AuthenticateAsClientAsync(remoteEndpoint.Address.ToString());
-                        Console.WriteLine($"Established {client.Client.RemoteEndPoint} => {remoteEndpoint}");
+                        _logger.LogDebug($"Established {client.Client.RemoteEndPoint} => {remoteEndpoint}");
 
                         var clientStream = client.GetStream();
 
@@ -67,10 +68,10 @@ namespace DnsTlsProxy
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                _logger.LogError(e, "DNS question proxy failed");
             }
 
-            Console.WriteLine($"Closed {client.Client.RemoteEndPoint} => {remoteEndpoint}");
+            _logger.LogDebug($"Closed {client.Client.RemoteEndPoint} => {remoteEndpoint}");
         }
     }
 }
