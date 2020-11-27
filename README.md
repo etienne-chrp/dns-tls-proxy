@@ -12,13 +12,13 @@
 
 ## Description
 
-Most applications are not nativelly supporting DNS over TLS, the goal of this project is to create a proxy that will forward unsecured DNS request to a secured DNS server. 
+Most applications are not natively supporting DNS over TLS, the goal of this project is to create a proxy that will forward unsecured DNS request to a secured DNS server. 
 
 ```
 +-----------+ DNS Query +-----------+ DNS Query +-----------+
 |           |---------->|           |---------->|           |
 |  Client   | 53tcp/udp |   Proxy   |   853tcp  |  DNS TLS  |
-|           |<----------|           |<----------|  Server   |           
+|           |<----------|           |<----------|  Server   |
 +-----------+           +-----------+    TLS    +-----------+
 ```
 
@@ -94,7 +94,7 @@ nslookup -set=vc -port=5053 n26.com 127.0.0.1
 1. `DnsTlsUdpProxy` and `DnsTlsTcpProxy` are `BackgroundService` that are listening respectively on UDP and TCP ports
 2. When a request is received an asynchronous call with the request info as arguments is made to the `ProxyAsync` method
 3. The request data is retrieved
-    - TCP: The content of the `TcpClient` stream is read (cf. [DNS TCP message length](###dns-tcp-message-length)
+    - TCP: The content of the `TcpClient` stream is read (cf. [DNS TCP message length](###dns-tcp-message-length))
     - UDP: The `UdpReceiveResult` already contains the data
 4. A TCP/TLS session is initiated with the DNS server, the request is sent and the result read: `DnsClient.ResolveTlsAsync`
 5. The result is sent back to the client
@@ -136,7 +136,7 @@ The project is containing the configuration files to be opened in a VS Code remo
 
 #### Sidecar container
 
-In Kuberntes you could run the DNS container in the Pod on the default port 53. You could then specifiy on the app containe rthe default nameserver to be 127.0.0.1.
+In Kubernetes you could run the DNS container in the Pod on the default port 53. You could then specifiy on the app container the default nameserver to be 127.0.0.1.
 
 ```yaml
 dnsConfig:
