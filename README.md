@@ -169,7 +169,8 @@ dnsConfig:
 ### 3. What other improvements do you think would be interesting to add to the project?
 
 - Integration tests <https://wright-development.github.io/post/using-docker-for-net-core/>
-- Accept also TCP/TLS request
+- Accept also TCP/TLS request in order to accept all traffic type
+- Read DNS messages content in order to log traffic
 
 ## References
 
