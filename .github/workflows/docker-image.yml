@@ -23,12 +23,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: '3.1.x' # SDK Version to use; x will use the latest version of the 3.1 channel
-    - run: dotnet sonarscanner begin \
-          /o:etienne-chrp \
-          /k:etienne-chrp_dns-tls-proxy \
-          /d:sonar.host.url=https://sonarcloud.io
-        dotnet build
-        dotnet sonarscanner end
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
